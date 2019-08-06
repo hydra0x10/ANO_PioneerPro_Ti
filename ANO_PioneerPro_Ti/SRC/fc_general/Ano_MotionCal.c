@@ -13,7 +13,7 @@ s32 ref_height_old,ref_speed_old;
 
 s32 wcz_ref_height,wcz_ref_speed,wcz_ref_acc;
 
-static float wcz_acc_deadzone;	
+//static float wcz_acc_deadzone;	
 
 
 static s32 wcz_acc;
@@ -29,7 +29,7 @@ void WCZ_Data_Calc(u8 dT_ms,u8 wcz_f_pause,s32 wcz_acc_get,s32 ref_height)
 	wcz_ref_height = ref_height;
 	wcz_acc = wcz_acc_get;
 /////////////////////////////////////////////////////////////	
-	wcz_acc_deadzone = LIMIT(5 *(0.996f - imu_data.z_vec[Z] *imu_data.z_vec[Z]),0,1) *10;
+	//wcz_acc_deadzone = 0;//LIMIT(5 *(0.996f - imu_data.z_vec[Z] *imu_data.z_vec[Z]),0,1) *10;
 	
 //	roll_acc_fix = (ABS(sensor.Gyro_deg[X]) + ABS(sensor.Gyro_deg[Y]) - 20) *0.1f;
 //	roll_acc_fix = LIMIT(roll_acc_fix,0,5);
@@ -62,7 +62,7 @@ void WCZ_Data_Calc(u8 dT_ms,u8 wcz_f_pause,s32 wcz_acc_get,s32 ref_height)
 
 	
 	wcz_spe_fus.fix_kp = 0.6f;
-	wcz_spe_fus.in_est_d = my_deadzone(wcz_acc_fus.out,0,wcz_acc_deadzone);
+	wcz_spe_fus.in_est_d = wcz_acc_fus.out;
 	wcz_spe_fus.in_obs = wcz_ref_speed;
 	wcz_spe_fus.e_limit = 100;
 	fix_inte_filter(dT_ms*1e-3f,&wcz_spe_fus);

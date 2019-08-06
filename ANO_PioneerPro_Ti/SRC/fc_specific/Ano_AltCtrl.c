@@ -178,7 +178,7 @@ void Alt_1level_Ctrl(float dT_s)
 	
 	loc_ctrl_1.exp[Z] = 0.6f *fs.alt_ctrl_speed_set + alt_val_2.out;//速度前馈0.6f，直接给速度
 	
-	w_acc_z_lpf += 0.1f *(imu_data.w_acc[Z] - w_acc_z_lpf); //低通滤波
+	w_acc_z_lpf += 0.2f *(imu_data.w_acc[Z] - w_acc_z_lpf); //低通滤波
 
 	loc_ctrl_1.fb[Z] = wcz_spe_fus.out + Ano_Parame.set.pid_alt_1level[KD] *w_acc_z_lpf;//微分先行，下边PID函数微分系数为0
 	

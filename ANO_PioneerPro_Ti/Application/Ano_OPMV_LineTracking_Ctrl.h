@@ -15,7 +15,7 @@ typedef struct
 	s16 r2pixel_val;
 
 	//
-	s16 decou_pos_pixel;
+	float decou_pos_pixel;
 	float ground_pos_err_h_cm;
 	float ground_pos_err_d_h_cmps;
 	

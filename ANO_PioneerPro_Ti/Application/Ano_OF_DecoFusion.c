@@ -1,9 +1,9 @@
 
 /*==========================================================================
- * 描述    ：对光流传回的数据进行处理，并解除因机体俯仰、横滚旋转而造成光流
-             输出的耦合，也称作“旋转解耦”或“旋转补偿”。然后与高度进行换算得
-						 到地面速度，再与加速度计测量数据进行融合，得到更稳定的地面速度
-						 输出。
+ * 描述    ：对优像光流(UP_OF)传回的数据进行处理，并解除因机体俯仰、横滚旋转
+             而造成光流输出的耦合，也称作“旋转解耦”或“旋转补偿”。然后与高度
+						 进行换算得到地面速度，再与加速度计测量数据进行融合，得到更稳定
+						 的地面速度输出。
  
  * 更新时间：2019-07-13 
  * 作者		 ：匿名科创-Jyoun
@@ -19,8 +19,17 @@
  * 君子坦荡荡，小人常戚戚，匿名坚决不会请水军、请喷子，也从未有过抹黑同行的行为。  
  * 开源不易，生活更不容易，希望大家互相尊重、互帮互助，共同进步。
  * 只有您的支持，匿名才能做得更好。 
+============================================================================
+更新：
+
+201908012354-Jyoun：增加优像光流朝上的光流解算程序。
+本版备注：优像光流安装方向还是接线方朝左（俯视飞机），需要先设定参照物的高度。
+
+
+
 
 ===========================================================================*/
+
 //默认引用
 #include "Ano_OF_DecoFusion.h"
 #include "Ano_IMU.h"
@@ -59,6 +68,9 @@ float of_fus_err[2],of_fus_err_i[2];
 #define UPOF_CMPPIXEL_Y     0.00012f     //每像素对应的地面距离，与焦距和高度有关，需要调试标定。
 #define FUS_KP              2.0f
 #define FUS_KI              1.0f
+//
+#define UPOF_UP_DW          0             //0:朝下；1：朝上
+#define OBJREF_HEIGHT_CM    280           //参照物高度，厘米;光流朝上才有用。
 /**********************************************************************************************************
 *函 数 名: ANO_OF_Data_Check_Task
 *功能说明: 匿名科创光流准备数据任务
@@ -214,8 +226,16 @@ static void ANO_OF_Decouple(u8 *dT_ms)
 	else
 	{
 		//
-		of_rdf.of_vel[X] = (1000/of_data.it_ms *of_data.flow_x_integral + UPOF_PIXELPDEG_X *of_rot_d_degs[Y] );
-		of_rdf.of_vel[Y] = (1000/of_data.it_ms *of_data.flow_y_integral - UPOF_PIXELPDEG_Y *of_rot_d_degs[X] );
+		if(UPOF_UP_DW==0)
+		{
+			of_rdf.of_vel[X] = (1000/of_data.it_ms *of_data.flow_x_integral + UPOF_PIXELPDEG_X *of_rot_d_degs[Y] );
+			of_rdf.of_vel[Y] = (1000/of_data.it_ms *of_data.flow_y_integral - UPOF_PIXELPDEG_Y *of_rot_d_degs[X] );
+		}
+		else
+		{
+			of_rdf.of_vel[X] = -(1000/of_data.it_ms *of_data.flow_x_integral + UPOF_PIXELPDEG_X *of_rot_d_degs[Y] );
+			of_rdf.of_vel[Y] =  (1000/of_data.it_ms *of_data.flow_y_integral + UPOF_PIXELPDEG_Y *of_rot_d_degs[X] );		
+		}
 		//quality
 		if(of_rdf.quality<=250)
 		{
@@ -237,7 +257,14 @@ static void ANO_OF_Fusion(u8 *dT_ms,s32 ref_height_cm)
 	float dT_s = (*dT_ms)*1e-3f;
 
 	//
-	of_rdf.of_ref_height = LIMIT(ref_height_cm,20,500);//限制到20cm-500cm
+	if(UPOF_UP_DW==0)
+	{
+		of_rdf.of_ref_height = LIMIT(ref_height_cm,20,500);//限制到20cm-500cm
+	}
+	else
+	{
+		of_rdf.of_ref_height = LIMIT((OBJREF_HEIGHT_CM - ref_height_cm),20,500);//限制到20cm-500cm
+	}
 	//
 	of_rdf.gnd_vel_obs_h[X] = UPOF_CMPPIXEL_X *of_rdf.of_vel[X] *of_rdf.of_ref_height;
 	of_rdf.gnd_vel_obs_h[Y] = UPOF_CMPPIXEL_Y *of_rdf.of_vel[Y] *of_rdf.of_ref_height;

@@ -92,8 +92,6 @@ void Drv_BspInit(void)
 	//标记罗盘OK，否则罗盘不参与解算（注：此处没有做罗盘是否正常的检测程序）
 	sens_hd_check.mag_ok = 1;       //	
 	
-	//电机输出初始化
-	Drv_PwmOutInit();
 	//ADC初始化
 	Drv_AdcInit();
 	//滴答时钟初始化
@@ -122,6 +120,8 @@ void Drv_BspInit(void)
 	Sensor_Basic_Init();	
 	//飞控PID初始化
 	All_PID_Init();
+	//电机输出初始化
+	Drv_PwmOutInit();
 }
 
 

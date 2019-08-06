@@ -113,6 +113,7 @@ void OpenMV_Byte_Get(u8 bytedata)
 *参    数: 缓存数据（形参），长度
 *返 回 值: 无
 **********************************************************************************************************/
+#include "Ano_DT.h"
 static void OpenMV_Data_Analysis(u8 *buf_data,u8 len)
 {
 	if(*(buf_data+3)==0x41)
@@ -121,8 +122,11 @@ static void OpenMV_Data_Analysis(u8 *buf_data,u8 len)
 		opmv.cb.sta = *(buf_data+6);
 		opmv.cb.pos_x = (s16)((*(buf_data+7)<<8)|*(buf_data+8));
 		opmv.cb.pos_y = (s16)((*(buf_data+9)<<8)|*(buf_data+10));
+		opmv.cb.dT_ms = *(buf_data+11);
 		//
 		opmv.mode_sta = 1;
+		//
+		f.send_omv_ct = 1;
 	}
 	else if(*(buf_data+3)==0x42)
 	{
@@ -132,9 +136,11 @@ static void OpenMV_Data_Analysis(u8 *buf_data,u8 len)
 		opmv.lt.p_flag = *(buf_data+10);
 		opmv.lt.pos_x = (s16)((*(buf_data+11)<<8)|*(buf_data+12));
 		opmv.lt.pos_y = (s16)((*(buf_data+13)<<8)|*(buf_data+14));
-		
+		opmv.lt.dT_ms = *(buf_data+15);
 		//
 		opmv.mode_sta = 2;
+		//
+		f.send_omv_lt = 1;
 	}
 	//
 	OpenMV_Check_Reset();
