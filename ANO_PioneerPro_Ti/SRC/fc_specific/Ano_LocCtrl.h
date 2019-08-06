@@ -11,7 +11,7 @@
 typedef struct
 {
 	float exp[VEC_XYZ];
-	s32 fb[VEC_XYZ];
+	float fb[VEC_XYZ];
 
 	
 	float out[VEC_XYZ];

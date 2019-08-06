@@ -5,6 +5,14 @@
  * 技术Q群 ：190169595
  * 描述    ：数据传输
 **********************************************************************************/
+/*============================================================================
+更新：
+201907272159-Jyoun：增加飞控状态界面传感器状态数据发送。
+201908031126-茶不思：增加mv相关数据发送，可在上位机查看mv寻色块数据。
+
+
+===========================================================================*/
+
 #include "Ano_DT.h"
 #include "Drv_Uart.h"
 #include "ano_usb.h"
@@ -18,7 +26,7 @@
 #include "Ano_MotorCtrl.h"
 #include "Ano_Power.h"
 #include "Ano_FlightCtrl.h"
-
+#include "Drv_OpenMV.h"
 #include "Ano_MotionCal.h"
 #include "Ano_FlightDataCal.h"
 
@@ -71,7 +79,9 @@ void ANO_DT_Data_Exchange(void)
 	static u16 power_cnt	= 50;
 	static u16 speed_cnt   	= 50;
 	static u16 sensorsta_cnt = 500;
+	static u16 omv_cnt = 100;
 	static u16 location_cnt = 500;
+	static u8	flag_send_omv = 0;
 
 		
 	if((cnt % senser_cnt) == (senser_cnt-1))
@@ -101,6 +111,11 @@ void ANO_DT_Data_Exchange(void)
 	if((cnt % sensorsta_cnt) == (sensorsta_cnt-2))
 	{
 		f.send_sensorsta = 1;		
+	}	
+	
+	if((cnt % omv_cnt) == (omv_cnt-2))
+	{
+		flag_send_omv = 1;		
 	}	
 	
 	if((cnt % location_cnt) == (location_cnt-3))
@@ -150,6 +165,21 @@ void ANO_DT_Data_Exchange(void)
 		f.send_senser2 = 0;
 		ANO_DT_Send_Senser2(baro_height,ref_tof_height,sensor.Tempreature_C*10);//原始数据
 	}	
+/////////////////////////////////////////////////////////////////////////////////////
+	else if(flag_send_omv)
+	{
+		flag_send_omv = 0;
+		if(f.send_omv_ct)
+		{
+			f.send_omv_ct = 0;
+			ANO_DT_SendOmvCt(opmv.cb.color_flag,opmv.cb.sta,opmv.cb.pos_x,opmv.cb.pos_y,opmv.cb.dT_ms);
+		}
+		else if(f.send_omv_lt)
+		{
+			f.send_omv_lt = 0;
+			ANO_DT_SendOmvLt(opmv.lt.sta, opmv.lt.angle, opmv.lt.deviation, opmv.lt.p_flag, opmv.lt.pos_x, opmv.lt.pos_y, opmv.lt.dT_ms);
+		}
+	}
 /////////////////////////////////////////////////////////////////////////////////////
 	else if(f.send_rcdata)
 	{
@@ -254,7 +284,7 @@ void ANO_DT_Data_Receive_Prepare(u8 data)
 		_data_len = data;
 		DT_data_cnt = 0;
 	}
-	else if(state==5&&_data_len>0)
+	else if(state==5&&_data_len>0&&_data_len<80)
 	{
 		_data_len--;
 		DT_RxBuffer[5+DT_data_cnt++]=data;
@@ -1057,6 +1087,69 @@ void ANO_DT_SendSensorSta(u8 of_sta,u8 gps_sta,u8 opmv_sta,u8 uwb_sta,u8 altadd_
 	ANO_DT_Send_Data(data_to_send, _cnt);
 }
 
+void ANO_DT_SendOmvCt(u8 color, u8 sta, s16 x, s16 y, u8 d_tim)
+{
+	u8 _cnt=0;
+	
+	data_to_send[_cnt++]=0xAA;
+	data_to_send[_cnt++]=MYHWADDR;
+	data_to_send[_cnt++]=SWJADDR;
+	data_to_send[_cnt++]=0x41;
+	data_to_send[_cnt++]=0;
+	
+	data_to_send[_cnt++]=color;
+	data_to_send[_cnt++]=sta;
+	data_to_send[_cnt++]=BYTE1(x);
+	data_to_send[_cnt++]=BYTE0(x);
+	data_to_send[_cnt++]=BYTE1(y);
+	data_to_send[_cnt++]=BYTE0(y);
+	data_to_send[_cnt++]=d_tim;
+
+	data_to_send[4] = _cnt-5;
+	
+	u8 sum = 0;
+	for(u8 i=0;i<_cnt;i++)
+		sum += data_to_send[i];
+	
+	data_to_send[_cnt++]=sum;
+	
+	ANO_DT_Send_Data(data_to_send, _cnt);
+}
+
+void ANO_DT_SendOmvLt(u8 sta, s16 angle, s16 offset, u8 pflag, s16 x, s16 y, u8 d_tim)
+{
+	u8 _cnt=0;
+	
+	data_to_send[_cnt++]=0xAA;
+	data_to_send[_cnt++]=MYHWADDR;
+	data_to_send[_cnt++]=SWJADDR;
+	data_to_send[_cnt++]=0x42;
+	data_to_send[_cnt++]=0;
+	
+	data_to_send[_cnt++]=sta;
+	data_to_send[_cnt++]=BYTE1(angle);
+	data_to_send[_cnt++]=BYTE0(angle);
+	data_to_send[_cnt++]=BYTE1(offset);
+	data_to_send[_cnt++]=BYTE0(offset);
+	data_to_send[_cnt++]=pflag;
+	data_to_send[_cnt++]=BYTE1(x);
+	data_to_send[_cnt++]=BYTE0(x);
+	data_to_send[_cnt++]=BYTE1(y);
+	data_to_send[_cnt++]=BYTE0(y);
+	data_to_send[_cnt++]=d_tim;
+
+	data_to_send[4] = _cnt-5;
+	
+	u8 sum = 0;
+	for(u8 i=0;i<_cnt;i++)
+		sum += data_to_send[i];
+	
+	data_to_send[_cnt++]=sum;
+	
+	ANO_DT_Send_Data(data_to_send, _cnt);
+}
+
+
 //用户自定义数据发送
 #include "Ano_MotionCal.h"
 #include "Ano_OPMV_CBTracking_Ctrl.h"
@@ -1092,19 +1185,31 @@ void ANO_DT_Send_User()
 //	data_to_send[_cnt++]=BYTE0(_temp);	
 ////=====================================
 ////=====================================
+	
+	_temp = (s16)(ano_opmv_cbt_ctrl.opmv_pos[1] );//         //1
+	data_to_send[_cnt++]=BYTE1(_temp);
+	data_to_send[_cnt++]=BYTE0(_temp);		
+	
+	_temp = (s16)(ano_opmv_cbt_ctrl.decou_pos_pixel[1] );//         //2
+	data_to_send[_cnt++]=BYTE1(_temp);
+	data_to_send[_cnt++]=BYTE0(_temp);	
+		
+	_temp = (s16)(ano_opmv_cbt_ctrl.ground_pos_err_h_cm[1] );//         //3
+	data_to_send[_cnt++]=BYTE1(_temp);
+	data_to_send[_cnt++]=BYTE0(_temp);
+	
+	_temp = (s16)(ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[1] );//4
+	data_to_send[_cnt++]=BYTE1(_temp);
+	data_to_send[_cnt++]=BYTE0(_temp);	
+	
+	_temp = (s16)(ano_opmv_cbt_ctrl.target_gnd_velocity_cmps[1]); //5
+	data_to_send[_cnt++]=BYTE1(_temp);
+	data_to_send[_cnt++]=BYTE0(_temp);	
 
-//	_temp = (s16)(ano_opmv_cbt_ctrl.rp2pixel_val[1]*100);//         //1
-//	data_to_send[_cnt++]=BYTE1(_temp);
-//	data_to_send[_cnt++]=BYTE0(_temp);	
-//	
-//	_temp = (s16)(ano_opmv_cbt_ctrl.opmv_pos[1] *100);//         //2
-//	data_to_send[_cnt++]=BYTE1(_temp);
-//	data_to_send[_cnt++]=BYTE0(_temp);		
-//	
-//	_temp = (s16)(ano_opmv_cbt_ctrl.decou_pos_pixel[1] *100);//         //3
-//	data_to_send[_cnt++]=BYTE1(_temp);
-//	data_to_send[_cnt++]=BYTE0(_temp);	
-//	
+	_temp = (s16)(ano_opmv_cbt_ctrl.exp_velocity_h_cmps[1]); //6
+	data_to_send[_cnt++]=BYTE1(_temp);
+	data_to_send[_cnt++]=BYTE0(_temp);	
+
 ////=====================================
 //=====================================
 //extern s32 sensor_val_ref[];
@@ -1112,37 +1217,37 @@ void ANO_DT_Send_User()
 //	data_to_send[_cnt++]=BYTE1(_temp);
 //	data_to_send[_cnt++]=BYTE0(_temp);	
 
-	_temp = (s16)(wcz_acc_fus.out);//         //1
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);	
-	
-	_temp = (s16)(wcz_spe_fus.out);//         //2
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);	
-	
-	_temp = (s16)(wcz_hei_fus.out);//         //3
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);	
-	
-	_temp = (s16)(wcz_ref_speed);//         //4
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);	
+//	_temp = (s16)(wcz_acc_fus.out);//         //1
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);	
+//	
+//	_temp = (s16)(wcz_spe_fus.out);//         //2
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);	
+//	
+//	_temp = (s16)(wcz_hei_fus.out);//         //3
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);	
+//	
+//	_temp = (s16)(wcz_ref_speed);//         //4
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);	
 
-	_temp = (s16)(wcz_ref_height);//         //5
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);
-	
-	_temp = (s16)(mc.ct_val_thr);//         //6
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);
-	
-	_temp = (s16)(switchs.of_tof_on *1000);//         //7
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);	
-	
-	_temp = (s16)(ref_tof_height);//         //7
-	data_to_send[_cnt++]=BYTE1(_temp);
-	data_to_send[_cnt++]=BYTE0(_temp);		
+//	_temp = (s16)(wcz_ref_height);//         //5
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);
+//	
+//	_temp = (s16)(mc.ct_val_thr);//         //6
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);
+//	
+//	_temp = (s16)(switchs.of_tof_on *1000);//         //7
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);	
+//	
+//	_temp = (s16)(ref_tof_height);//         //7
+//	data_to_send[_cnt++]=BYTE1(_temp);
+//	data_to_send[_cnt++]=BYTE0(_temp);		
 //=====================================
 //#include "Ano_OF.h"
 //static u16 tmp = 0;

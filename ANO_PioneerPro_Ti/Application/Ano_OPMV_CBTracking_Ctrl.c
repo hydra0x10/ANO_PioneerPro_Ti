@@ -18,6 +18,11 @@
  * 君子坦荡荡，小人常戚戚，匿名坚决不会请水军、请喷子，也从未有过抹黑同行的行为。  
  * 开源不易，生活更不容易，希望大家互相尊重、互帮互助，共同进步。
  * 只有您的支持，匿名才能做得更好。  
+============================================================================
+更新：
+201908022321-Jyoun：修复对优像光流的兼容。
+201908032123-Jyoun：修改角度解耦数据类型，整形改为float
+201908032253-Jyoun：增加对微分的滤波，并重新整定参数，效果提升。
 
 ===========================================================================*/
 
@@ -33,18 +38,23 @@
 //需要引用的文件：
 #include "ANO_IMU.h"
 #include "Ano_OF.h"
+#include "Ano_OF_DecoFusion.h"
 #include "Ano_FlightCtrl.h"
 #include "Ano_MotionCal.h"
 //需要调用引用的外部变量：
 #define IMU_ROL                 (imu_data.rol)     //横滚角
 #define IMU_PIT                 (imu_data.pit)     //俯仰角
 #define RELATIVE_HEIGHT_CM           (jsdata.valid_of_alt_cm)  //相对高度
-#define VELOCITY_CMPS_X              (OF_DX2FIX)   //载体运动速度h_x
-#define VELOCITY_CMPS_Y              (OF_DY2FIX)   //载体运动速度h_y
-
-#define CBT_KP                  (0.66f)  //比例项
-#define CBT_KD                  (0.00f)  //微分项
-#define CBT_KF                  (0.50f)  //前馈项
+//
+#define OF_DATA_SOURCE               ((sens_hd_check.of_ok)?1:0)
+#define VELOCITY_CMPS_X_S1           (OF_DX2FIX)                 //载体运动速度h_x
+#define VELOCITY_CMPS_Y_S1           (OF_DY2FIX)                 //载体运动速度h_y
+#define VELOCITY_CMPS_X_S2           (of_rdf.gnd_vel_est_h[0])   //载体运动速度h_x
+#define VELOCITY_CMPS_Y_S2           (of_rdf.gnd_vel_est_h[1])   //载体运动速度h_y
+//
+#define CBT_KP                  (0.80f)  //比例项
+#define CBT_KD                  (0.20f)  //微分项
+#define CBT_KF                  (0.20f)  //前馈项
 
 //需要操作赋值的外部变量：
 
@@ -53,7 +63,7 @@
 //全局变量：
 static u16 target_loss_hold_time;
 _ano_opmv_cbt_ctrl_st ano_opmv_cbt_ctrl;
-static float ref_carrier_velocity[2];
+static s16 ref_carrier_velocity[2];
 static float decou_pos_pixel_lpf[2][2];
 
 //参数设定：
@@ -131,8 +141,18 @@ static void ANO_CBTracking_Decoupling(u8 *dT_ms,float rol_degs,float pit_degs)
 		ano_opmv_cbt_ctrl.rp2pixel_val[0] = LIMIT(ano_opmv_cbt_ctrl.rp2pixel_val[0],-60,60);//高度120pixel
 		ano_opmv_cbt_ctrl.rp2pixel_val[1] = LIMIT(ano_opmv_cbt_ctrl.rp2pixel_val[1],-80,80);//宽度160pixel
 		//赋值参考的载体运动速度
-		ref_carrier_velocity[0] = VELOCITY_CMPS_X;
-		ref_carrier_velocity[1] = VELOCITY_CMPS_Y;		
+		if(OF_DATA_SOURCE==1)
+		{
+			//来源1  ANO_OF
+			ref_carrier_velocity[0] = VELOCITY_CMPS_X_S1;
+			ref_carrier_velocity[1] = VELOCITY_CMPS_Y_S1;		
+		}
+		else
+		{
+			//来源2 UP_OF
+			ref_carrier_velocity[0] = VELOCITY_CMPS_X_S2;
+			ref_carrier_velocity[1] = VELOCITY_CMPS_Y_S2;					
+		}
 	}
 	else
 	{
@@ -193,9 +213,15 @@ static void ANO_CBTracking_Calcu(u8 *dT_ms,s32 relative_height_cm)
 	ano_opmv_cbt_ctrl.ground_pos_err_h_cm[0] = CMPPIXEL_X *relative_height_cm_valid *ano_opmv_cbt_ctrl.decou_pos_pixel[0];
 	ano_opmv_cbt_ctrl.ground_pos_err_h_cm[1] = CMPPIXEL_Y *relative_height_cm_valid *ano_opmv_cbt_ctrl.decou_pos_pixel[1];
 	//计算微分偏差，单位厘米每秒
-	ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[0] = (ano_opmv_cbt_ctrl.ground_pos_err_h_cm[0] - g_pos_err_old[0])*(1000/(*dT_ms));
-	ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[1] = (ano_opmv_cbt_ctrl.ground_pos_err_h_cm[1] - g_pos_err_old[1])*(1000/(*dT_ms));
+	float gped_tmp[2];
+	gped_tmp[0] = (ano_opmv_cbt_ctrl.ground_pos_err_h_cm[0] - g_pos_err_old[0])*(1000/(*dT_ms));
+	gped_tmp[1] = (ano_opmv_cbt_ctrl.ground_pos_err_h_cm[1] - g_pos_err_old[1])*(1000/(*dT_ms));
+	ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[0] += 0.2f *(gped_tmp[0] - ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[0]);
+	ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[1] += 0.2f *(gped_tmp[1] - ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[1]);
 	//计算目标的地面速度，单位厘米每秒
+//	s16 temp[2];
+//	temp[0] = (s16)(ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[0] + ref_carrier_velocity[0]) ;
+//	temp[1] = (s16)(ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[1] + ref_carrier_velocity[1]) ;
 	ano_opmv_cbt_ctrl.target_gnd_velocity_cmps[0] = (ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[0] + ref_carrier_velocity[0]) ;
 	ano_opmv_cbt_ctrl.target_gnd_velocity_cmps[1] = (ano_opmv_cbt_ctrl.ground_pos_err_d_h_cmps[1] + ref_carrier_velocity[1]) ;
 }

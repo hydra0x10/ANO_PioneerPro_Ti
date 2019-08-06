@@ -11,6 +11,14 @@
 #include "Ano_OF.h"
 #include "Drv_Laser.h"
 
+
+/*============================================================================
+更新：
+201908022235-Jyoun：调整wcz_acc_use的滤波系数。
+
+
+===========================================================================*/
+
 u16 test_time_cnt;
 void Fc_Sensor_Get()//1ms
 {
@@ -120,7 +128,7 @@ float wcz_acc_use;
 
 void WCZ_Acc_Get_Task()//最小周期
 {
-	wcz_acc_use += 0.1f *(imu_data.w_acc[Z] - wcz_acc_use);
+	wcz_acc_use += 0.03f *(imu_data.w_acc[Z] - wcz_acc_use);
 }
 
 //void Baro_Get_Task()

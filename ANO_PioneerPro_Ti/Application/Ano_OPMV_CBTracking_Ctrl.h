@@ -16,7 +16,7 @@ typedef struct
 //	s16 rp2p_fifo_lagging[3][2];
 
 	//
-	s16 decou_pos_pixel[2];
+	float decou_pos_pixel[2];
 	float ground_pos_err_h_cm[2];
 	float ground_pos_err_d_h_cmps[2];
 	

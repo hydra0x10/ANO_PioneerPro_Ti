@@ -67,7 +67,7 @@ void Mag_Data_Deal_Task(u8 dT_ms,s16 mag_in[],float z_vec_z,float gyro_deg_x,flo
 	}
 
 ///////////////////cali//////////////////////////////////////////////////////	
-	if(mag.mag_CALIBRATE!= 0)
+	if(mag.mag_CALIBRATE!= 0 && flag.unlock_sta == 0)
 	{	
 		switch(mag_cal_step)
 		{

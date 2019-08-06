@@ -9,6 +9,7 @@
 #include "Ano_MotionCal.h"
 #include "Ano_Filter.h"
 #include "Ano_Navigate.h"
+#include "Ano_RC.h"
 
 /*
 Àƒ÷·£∫
@@ -121,6 +122,17 @@ void Motor_Ctrl_Task(u8 dT_ms)
 	{
 		Drv_MotorPWMSet(i,motor[i]);
 	}
+
+//#define Cali_Set_ESC
+#ifdef Cali_Set_ESC
+	//≈‰÷√ ‰≥ˆ
+	for(u8 i =0;i<4;i++)
+	{
+		motor[i] = CH_N[CH_THR]+500;
+		Drv_MotorPWMSet(i,motor[i]);
+	}
+	
+#endif
 	//test
 //	Drv_MotorPWMSet(4,200);
 

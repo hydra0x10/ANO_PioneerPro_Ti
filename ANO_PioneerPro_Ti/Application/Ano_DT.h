@@ -18,8 +18,10 @@ typedef struct
     u8 send_power;
     u8 send_user;
     u8 send_speed;
-		u8 send_sensorsta;
+	u8 send_sensorsta;
     u8 send_location;
+	u8 send_omv_ct;
+	u8 send_omv_lt;
 	u8 send_vef;
 	u16 send_parame;
 	u16 paraToSend;
@@ -122,6 +124,8 @@ void ANO_DT_ParUsedToParList(void);
 void ANO_DT_SendCmd(u8 dest, u8 fun, u16 cmd1, u16 cmd2, u16 cmd3, u16 cmd4, u16 cmd5);
 void ANO_DT_SendString(const char *str);
 void ANO_DT_SendStrVal(const char *str, s32 val);
+void ANO_DT_SendOmvCt(u8 color, u8 sta, s16 x, s16 y, u8 d_tim);
+void ANO_DT_SendOmvLt(u8 sta, s16 angle, s16 offset, u8 pflag, s16 x, s16 y, u8 d_tim);
 
 #endif
 
