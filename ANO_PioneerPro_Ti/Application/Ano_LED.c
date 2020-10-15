@@ -1,8 +1,6 @@
 #include "ANO_LED.h"
 #include "ANO_MATH.h"
 #include "Drv_led.h"
-#include "Ano_OPMV_CBTracking_Ctrl.h"
-#include "Ano_OPMV_LineTracking_Ctrl.h"
 
 
 u16 led_accuracy = 20;//该时间应与LED_Duty()调用周期相同
@@ -126,6 +124,8 @@ static void ledFlash(u8 dT_ms,u8 led, u16 on_ms,u16 off_ms)
 
 _led_sta LED_STA;
 #include "Ano_FcData.h"
+#include "Ano_OPMV_CBTracking_Ctrl.h"
+#include "Ano_OPMV_LineTracking_Ctrl.h"
 void LED_Task2(u8 dT_ms)
 {
 	static u16 timtmp = 0;

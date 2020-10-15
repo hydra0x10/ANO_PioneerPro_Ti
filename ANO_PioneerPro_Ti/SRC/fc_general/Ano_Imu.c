@@ -296,7 +296,7 @@ void IMU_update(float dT,_imu_state_st *state,float gyr[VEC_XYZ], s32 acc[VEC_XY
 			{
 				//通过增量进行对准
 				mkp_use = 10.0f;
-				if(mag_yaw_err != 0 && ABS(mag_yaw_err)<0.02f)
+				if(mag_yaw_err != 0 && ABS(mag_yaw_err)<0.01f)
 				{
 					state->M_reset = 0;//误差小于2的时候，清除复位标记
 				}
@@ -334,7 +334,7 @@ void IMU_update(float dT,_imu_state_st *state,float gyr[VEC_XYZ], s32 acc[VEC_XY
 				
 				imu_reset_val = LIMIT(imu_reset_val,0,1.0f);
 				
-				if((imu_reset_val < 0.05f) && (state->M_reset == 0))
+				if((imu_reset_val < 0.02f) && (state->M_reset == 0))
 				{
 					//计时
 					reset_cnt += 2;

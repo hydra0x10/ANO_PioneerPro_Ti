@@ -419,11 +419,10 @@ void Swtich_State_Task(u8 dT_ms)
 		//光流高度600cm内有效
 		if(jsdata.of_alt<600)
 		{
-			//
-			of_tof_on_tmp = 1;
+			//		
 			jsdata.valid_of_alt_cm = jsdata.of_alt;
 			//延时1.5秒判断激光高度是否有效
-			if(of_alt_delay<1500)
+			if(of_alt_delay<1000)
 			{
 				of_alt_delay += dT_ms;			
 			}
@@ -431,12 +430,11 @@ void Swtich_State_Task(u8 dT_ms)
 			{
 				//判定高度有效
 				of_alt_ok = 1;
+				of_tof_on_tmp = 1;
 			}
 		}
 		else
 		{
-			//
-			of_tof_on_tmp = 0;
 			//
 			if(of_alt_delay>0)
 			{
@@ -446,6 +444,7 @@ void Swtich_State_Task(u8 dT_ms)
 			{
 				//判定高度无效
 				of_alt_ok = 0;
+				of_tof_on_tmp = 0;
 			}				
 		}
 		//

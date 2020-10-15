@@ -202,7 +202,7 @@ void WCZ_Fus_Task(u8 dT_ms)
 		{
 			if(switchs.of_tof_on) //光流带TOF，光流优先
 			{
-				ref_tof_height = jsdata.of_alt ;
+				ref_tof_height = jsdata.valid_of_alt_cm ;
 			}
 			else//switchs.tof_on
 			{

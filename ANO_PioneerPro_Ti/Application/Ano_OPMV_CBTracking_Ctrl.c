@@ -85,7 +85,7 @@ static float decou_pos_pixel_lpf[2][2];
 void ANO_CBTracking_Task(u8 dT_ms)
 {
 	//开启控制的条件，可以自己修改
-	if(opmv.mode_sta==1 && opmv_ct_sta.en)
+	if(opmv.mode_sta==1)// && opmv_ct_sta.en)
 	{
 		//跟踪数据旋转解耦合
 		ANO_CBTracking_Decoupling(&dT_ms,IMU_ROL,IMU_PIT);

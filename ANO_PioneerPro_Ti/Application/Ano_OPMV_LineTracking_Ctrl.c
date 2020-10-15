@@ -40,8 +40,8 @@
 #define RELATIVE_HEIGHT_CM           (jsdata.valid_of_alt_cm)  //相对高度
 
 
-#define LT_KP                  (0.66f)  //比例项
-#define LT_KD                  (0.00f)  //微分项
+#define LT_KP                  (0.80f)  //比例项
+#define LT_KD                  (0.05f)  //微分项
 
 
 //需要操作赋值的外部变量：
@@ -70,7 +70,7 @@ static u8 step_pro_sta;
 void ANO_LTracking_Task(u8 dT_ms)
 {
 	//开启控制的条件，可以自己修改
-	if(opmv.mode_sta==2 && opmv_ct_sta.en)
+	if(opmv.mode_sta==2)// && opmv_ct_sta.en)
 	{
 		//寻线数据旋转解耦合
 		ANO_LTracking_Decoupling(&dT_ms,IMU_ROL,IMU_PIT);
@@ -288,6 +288,7 @@ void ANO_LT_StepProcedure(u8 *dT_ms)
 		{
 			//刹车减速
 			ano_opmv_lt_ctrl.exp_velocity_h_cmps[0] = 10;//识别到直角后减速前进的速度cm/s
+			ano_opmv_lt_ctrl.exp_velocity_h_cmps[1] = 0;//左右纠正速度复位
 			//持续时间，转弯后偏内测，则加长时间;反之减少时间
 			if(elapsed_time_ms<1500)
 			{
@@ -305,6 +306,7 @@ void ANO_LT_StepProcedure(u8 *dT_ms)
 		{
 			//刹车减速
 			ano_opmv_lt_ctrl.exp_velocity_h_cmps[0] = 10;//识别到直角后减速前进的速度cm/s
+			ano_opmv_lt_ctrl.exp_velocity_h_cmps[1] = 0;//左右纠正速度复位
 			//持续时间，转弯后偏内测，则加长时间;反之减少时间
 			if(elapsed_time_ms<1500)
 			{
@@ -369,6 +371,7 @@ void ANO_LT_StepProcedure(u8 *dT_ms)
 			{
 				elapsed_time_ms+= *dT_ms;
 				ano_opmv_lt_ctrl.exp_velocity_h_cmps[0] = FORWARD_VEL;
+				ano_opmv_lt_ctrl.exp_velocity_h_cmps[1] = 0;
 			}
 			else
 			{
